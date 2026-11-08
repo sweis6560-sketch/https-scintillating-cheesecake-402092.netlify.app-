@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b12">
+<title>LiveZone — Jetzt live gehen</title>
+<style>
+:root{color-scheme:dark;--bg:#090b12;--panel:#141a29;--line:#293248;--muted:#a7b0c4;--pink:#ff315f;--violet:#a14dff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 85% 0,#2b1744 0,transparent 38%),var(--bg);color:#f7f8fc;font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+header{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,5vw,64px);border-bottom:1px solid #ffffff18;background:#090b12dd;position:sticky;top:0}
+.logo{font-size:25px;font-weight:950;letter-spacing:-1px}.logo span{color:#ff477e}.status{font-size:13px;color:#aeb7ca}
+main{max-width:1050px;margin:0 auto;padding:42px 18px 70px}.intro{text-align:center;margin:0 auto 28px;max-width:700px}.eyebrow{color:#ff91ae;font-size:12px;font-weight:850;letter-spacing:2px;text-transform:uppercase}.intro h1{font-size:clamp(34px,6vw,58px);line-height:1.02;letter-spacing:-2px;margin:12px 0}.intro p{color:var(--muted)}
+.panel{background:#111725;border:1px solid var(--line);border-radius:22px;padding:clamp(16px,3vw,28px);box-shadow:0 20px 70px #0005}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.field{flex:1;min-width:220px}.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}.field input{width:100%;border:1px solid var(--line);background:#090e19;color:white;border-radius:11px;padding:13px;font:inherit}
+button{border:0;border-radius:12px;padding:13px 19px;color:white;font:inherit;font-weight:800;cursor:pointer}.primary{background:linear-gradient(110deg,var(--pink),var(--violet));box-shadow:0 8px 26px #ff315f33}.secondary{background:#252e43;border:1px solid #39445c}.danger{background:#b71f42}.help{font-size:13px;color:var(--muted);margin:14px 0 0}
+#stage{display:none;margin-top:18px}#stage.active{display:block}.livebar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}.livepill{background:#c51e48;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:900;letter-spacing:1px}#jitsi{width:100%;height:min(68vh,650px);min-height:430px;background:#05070c;border:1px solid var(--line);border-radius:15px;overflow:hidden}.share{margin-top:12px;background:#0b101c;border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.share code{color:#ffc2d1;overflow-wrap:anywhere}.note{margin-top:20px;border-left:3px solid #a14dff;padding:10px 14px;background:#171427;color:#c7c3d8;border-radius:0 10px 10px 0;font-size:13px}
+@media(max-width:600px){main{padding-top:28px}#jitsi{height:65vh;min-height:390px}.status{display:none}}
+</style>
+</head>
+<body>
+<header><div class="logo">Live<span>Zone</span></div><div class="status">Dein eigener Live-Raum</div></header>
+<main>
+<section class="intro"><div class="eyebrow">Deine Bühne. Deine Community.</div><h1>Geh jetzt <span style="color:#ff477e">LIVE.</span></h1><p>Starte deinen eigenen Live-Raum und teile den Einladungslink mit deinen Zuschauern.</p></section>
+<section class="panel">
+<div id="setup">
+<div class="row"><div class="field"><label for="creator">Dein Creator-Name</label><input id="creator" maxlength="40" placeholder="z. B. LiveZone Creator" autocomplete="nickname"></div><div class="field"><label for="room">Name deines Live-Raums</label><input id="room" maxlength="50" placeholder="z. B. Mein erster Stream"></div></div>
+<div class="row" style="margin-top:16px"><button class="primary" id="start">🔴 Jetzt live gehen</button><span class="help">Kamera und Mikrofon werden beim Start abgefragt.</span></div>
+<p class="help">Tipp: Erlaube Kamera und Mikrofon im Browser. Am besten funktioniert es über HTTPS und mit aktuellem Chrome oder Safari.</p>
+</div>
+<div id="stage">
+<div class="livebar"><span class="livepill">● LIVE-RAUM</span><button class="danger" id="stop">Live-Raum verlassen</button></div>
+<div id="jitsi"></div>
+<div class="share"><div><strong>Einladungslink für Zuschauer</strong><br><code id="shareurl"></code></div><button class="secondary" id="copy">Link kopieren</button></div>
+</div>
+<div class="note"><strong>Transparenz:</strong> Diese erste LiveZone-Version nutzt Jitsi Meet als Live-Video-Infrastruktur. Du kannst mit anderen in einem Video-Live-Raum sprechen und chatten. Das ist noch kein öffentlicher TikTok-ähnlicher Broadcast-Feed mit unbegrenzt vielen Zuschauern. Der Live-Raum wird über einen externen Dienst bereitgestellt.</div>
+</section>
+</main>
+<script src="https://meet.jit.si/external_api.js"></script>
+<script>
+let api=null;
+const $=id=>document.getElementById(id);
+function makeRoom(){return 'LiveZone-'+Math.random().toString(36).slice(2,8)+'-'+Date.now().toString(36)}
+$('start').addEventListener('click',()=>{
+ const roomName=$('room').value.trim()||'LiveZone-'+Math.random().toString(36).slice(2,7);
+ const creator=$('creator').value.trim()||'LiveZone Creator';
+ if(!window.JitsiMeetExternalAPI){alert('Der Live-Dienst konnte gerade nicht geladen werden. Bitte prüfe deine Internetverbindung und versuche es erneut.');return}
+ const safeRoom=roomName.normalize('NFKD').replace(/[^a-zA-Z0-9-]/g,'').slice(0,40)||makeRoom();
+ const room='LiveZone-'+safeRoom+'-'+Math.random().toString(36).slice(2,6);
+ $('setup').style.display='none';$('stage').classList.add('active');
+ $('shareurl').textContent='https://meet.jit.si/'+room;
+ api=new JitsiMeetExternalAPI('meet.jit.si',{roomName:room,parentNode:$('jitsi'),width:'100%',height:'100%',userInfo:{displayName:creator},configOverwrite:{prejoinConfig:{enabled:true},startWithAudioMuted:false,startWithVideoMuted:false,enableWelcomePage:false},interfaceConfigOverwrite:{APP_NAME:'LiveZone',SHOW_JITSI_WATERMARK:false,SHOW_BRAND_WATERMARK:false,SHOW_POWERED_BY:false,DEFAULT_BACKGROUND:'#090b12',TOOLBAR_BUTTONS:['microphone','camera','chat','raisehand','tileview','fullscreen','hangup']}});
+ api.addListener('readyToClose',leave);
+});
+function leave(){if(api){api.dispose();api=null}$('jitsi').innerHTML='';$('stage').classList.remove('active');$('setup').style.display='block'}
+$('stop').addEventListener('click',leave);
+$('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('shareurl').textContent);$('copy').textContent='Kopiert ✓'}catch(e){alert('Bitte kopiere den Link manuell: '+$('shareurl').textContent)}});
+</script>
+</body></html>
